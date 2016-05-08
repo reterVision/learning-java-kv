@@ -83,6 +83,9 @@ public class Memory<KeyType, ValueType> implements Storage<KeyType, ValueType> {
      */
     private void removeLeastRecentUsedKey() {
         synchronized (expiringQueueLock) {
+            if (storage.size() < maxKeySize) { // ensure we still need to delete keys
+                return;
+            }
             KeyType key = expiringQueue.poll();
             if (key != null) {
                 storage.remove(key);
