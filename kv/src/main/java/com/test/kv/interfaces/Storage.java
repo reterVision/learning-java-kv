@@ -1,6 +1,7 @@
 package com.test.kv.interfaces;
 
 import com.test.kv.exceptions.KVKeyDoesNotExistsException;
+import com.test.kv.exceptions.KVKeyExpiredException;
 
 /**
  * Interface for storage
@@ -11,7 +12,7 @@ public interface Storage<KeyType, ValueType> {
      *
      * @throws KVKeyDoesNotExistsException when key is not presented in storage
      */
-    ValueType Get(KeyType key) throws KVKeyDoesNotExistsException;
+    ValueType Get(KeyType key) throws KVKeyDoesNotExistsException, KVKeyExpiredException;
 
     /**
      * Set method adds or updates a key -> value pair in storage with ttl config
@@ -21,7 +22,7 @@ public interface Storage<KeyType, ValueType> {
     /**
      * SetEx method adds or updates a key -> value pair in storage with ttl config
      */
-    Boolean SetEx(KeyType key, ValueType value, Long ttl);
+    Boolean SetEx(KeyType key, ValueType value, Long ttlInSec);
 
     /**
      * Del method deletes a key in storage

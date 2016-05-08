@@ -1,5 +1,6 @@
 package com.test.kv.lib.storage;
 
+import com.test.kv.exceptions.KVKeyExpiredException;
 import junit.framework.TestCase;
 
 import com.test.kv.exceptions.KVKeyDoesNotExistsException;
@@ -33,8 +34,12 @@ public class MemoryTest extends TestCase {
         Boolean success = testMemory.SetEx("testKey", "testValue", new Long(1));
         assertTrue(success);
         Thread.currentThread().sleep(1000); // TODO find a better way to do time related unit testing
-        String value = testMemory.Get("testKey");
-        assertNull(value);
+
+        try {
+            testMemory.Get("testKey");
+        } catch (KVKeyExpiredException e) {
+            assertNotNull(e);
+        }
     }
 
     public void testDel() throws Exception {

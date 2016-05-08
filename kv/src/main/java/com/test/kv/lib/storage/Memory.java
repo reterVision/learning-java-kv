@@ -7,9 +7,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.sun.org.apache.bcel.internal.generic.INSTANCEOF;
-import com.sun.tools.jdi.ConcreteMethodImpl;
 import com.test.kv.exceptions.KVKeyDoesNotExistsException;
+import com.test.kv.exceptions.KVKeyExpiredException;
 import com.test.kv.interfaces.Storage;
 
 /**
@@ -62,8 +61,8 @@ public class Memory<KeyType, ValueType> implements Storage<KeyType, ValueType> {
         if (this.maxKeySize != 0) {
             this.maxKeySize = maxKeySize;
         }
-        this.storage = new ConcurrentHashMap<KeyType, ValueType>(maxKeySize);
-        this.expireAtStorage = new ConcurrentHashMap<KeyType, Long>(maxKeySize);
+        this.storage = new ConcurrentHashMap<KeyType, ValueType>(this.maxKeySize);
+        this.expireAtStorage = new ConcurrentHashMap<KeyType, Long>(this.maxKeySize);
         this.expiringQueue = new ConcurrentLinkedQueue<KeyType>();
     }
 
@@ -100,18 +99,19 @@ public class Memory<KeyType, ValueType> implements Storage<KeyType, ValueType> {
     }
 
     /**
-     * clearExpiredKeys removes the keys that are expired
+     * keyExpired removes the keys that are expired
+     *
+     * @return if the key is expired and been cleared
      */
-    private void clearExpiredKeys() {
-        for (Map.Entry<KeyType, Long> entry: expireAtStorage.entrySet()) {
-            Long ttl = entry.getValue();
-            long now = Instant.now().getEpochSecond();
-            if (now >= ttl) {
-                KeyType key = entry.getKey();
-                expireAtStorage.remove(key);
-                storage.remove(key);
-            }
+    private boolean keyExpired(KeyType key) {
+        Long now = new Long(Instant.now().getEpochSecond());
+        Long expiredAt = expireAtStorage.get(key);
+        if (expiredAt != null && now >= expiredAt) {
+            expireAtStorage.remove(key);
+            storage.remove(key);
+            return true;
         }
+        return false;
     }
 
     /**
@@ -121,9 +121,10 @@ public class Memory<KeyType, ValueType> implements Storage<KeyType, ValueType> {
      * @return the value corresponding to key
      * @throws KVKeyDoesNotExistsException
      */
-    public ValueType Get(KeyType key) throws KVKeyDoesNotExistsException {
-        clearExpiredKeys();
-
+    public ValueType Get(KeyType key) throws KVKeyDoesNotExistsException, KVKeyExpiredException {
+        if (keyExpired(key)) {
+            throw new KVKeyExpiredException("key " + key + " expired");
+        }
         try {
             ValueType value = storage.get(key);
             if (value == null) {
@@ -145,8 +146,6 @@ public class Memory<KeyType, ValueType> implements Storage<KeyType, ValueType> {
      * @return if Set operation succeed or not
      */
     public Boolean Set(KeyType key, ValueType value) {
-        clearExpiredKeys();
-
         try {
             if (!storage.containsKey(key)) {
                 if (storage.size() >= maxKeySize) {
@@ -167,7 +166,7 @@ public class Memory<KeyType, ValueType> implements Storage<KeyType, ValueType> {
      *
      * @param key the key to be set in storage
      * @param value the value to be set with key in storage
-     * @param ttl the time-to-live config of the key
+     * @param ttlInSec time-to-live config of the key
      * @return if Set operation succeed or not
      */
     public Boolean SetEx(KeyType key, ValueType value, Long ttlInSec) {
