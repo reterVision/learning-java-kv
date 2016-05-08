@@ -14,7 +14,7 @@ public interface Storage<KeyType, ValueType> {
     ValueType Get(KeyType key) throws KVKeyDoesNotExistsException;
 
     /**
-     * SetEx method adds or updates a key -> value pair in storage with ttl config
+     * Set method adds or updates a key -> value pair in storage with ttl config
      */
     Boolean Set(KeyType key, ValueType value);
 
