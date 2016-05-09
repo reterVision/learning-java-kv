@@ -14,7 +14,7 @@ import com.test.kv.interfaces.Storage;
 /**
  * Implementation of Storage -- In memory store with LRU
  */
-public class Memory<KeyType, ValueType> implements Storage<KeyType, ValueType> {
+public class MemoryStorage<KeyType, ValueType> implements Storage<KeyType, ValueType> {
     /**
      * storage is the actual store where we keep all key->value pairs
      */
@@ -43,21 +43,21 @@ public class Memory<KeyType, ValueType> implements Storage<KeyType, ValueType> {
     /**
      * static logger
      */
-    private static final Logger log = Logger.getLogger(Memory.class.getName());
+    private static final Logger log = Logger.getLogger(MemoryStorage.class.getName());
 
     /**
      * Constructor
      */
-    public Memory() {
+    public MemoryStorage() {
         this(0); // If user doesn't specify cache size, use the default value
     }
 
     /**
      * Constructor
      *
-     * @param maxKeySize the maximum size of keys Memory can store
+     * @param maxKeySize the maximum size of keys MemoryStorage can store
      */
-    public Memory(int maxKeySize) {
+    public MemoryStorage(int maxKeySize) {
         if (this.maxKeySize != 0) {
             this.maxKeySize = maxKeySize;
         }
