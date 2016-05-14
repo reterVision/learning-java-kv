@@ -10,10 +10,16 @@ import com.test.kv.exceptions.KVKeyDoesNotExistsException;
  */
 public class MemoryStorageTest extends TestCase {
 
+    private long getTestTTLScalar() {
+        return 1000000; // 1 millisecond = 1e+6 nanoseconds
+    }
+
+
     public void testGet() throws Exception {
         MemoryStorage<String, Object> testMemoryStorage = new MemoryStorage();
         try {
             testMemoryStorage.Get("NoSuchKey");
+            assertTrue(false); // intentionally fail the test if executed here.
         } catch (KVKeyDoesNotExistsException e) {
             assertNotNull(e);
         }
@@ -30,13 +36,16 @@ public class MemoryStorageTest extends TestCase {
     }
 
     public void testSetEx() throws Exception {
-        MemoryStorage<String, String> testMemoryStorage = new MemoryStorage();
+        int mapSize = 1;
+        long ttlScalar = getTestTTLScalar();
+
+        MemoryStorage<String, String> testMemoryStorage = new MemoryStorage(mapSize, ttlScalar);
         Boolean success = testMemoryStorage.SetEx("testKey", "testValue", new Long(1));
         assertTrue(success);
-        Thread.currentThread().sleep(1000); // TODO find a better way to do time related unit testing
 
         try {
             testMemoryStorage.Get("testKey");
+            assertTrue(false); // intentionally fail the test if executed here.
         } catch (KVKeyExpiredException e) {
             assertNotNull(e);
         }
@@ -51,6 +60,7 @@ public class MemoryStorageTest extends TestCase {
 
         try {
             testMemoryStorage.Del("NoSuchKey");
+            assertTrue(false); // intentionally fail the test if executed here.
         } catch (KVKeyDoesNotExistsException e) {
             assertNotNull(e);
         }
@@ -65,8 +75,13 @@ public class MemoryStorageTest extends TestCase {
 
         Boolean successSet2 = testMemoryStorage.Set("testKey2", "testValue2");
         assertTrue(successSet2);
-        value1 = testMemoryStorage.Get("testKey1");
-        assertNull(value1);
+
+        try {
+            value1 = testMemoryStorage.Get("testKey1");
+            assertTrue(false); // intentionally fail the test if executed here.
+        } catch (KVKeyDoesNotExistsException e) {
+            assertNotNull(e);
+        }
         String value2 = testMemoryStorage.Get("testKey2");
         assertEquals("testValue2", value2);
     }

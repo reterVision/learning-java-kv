@@ -46,6 +46,12 @@ public class MemoryStorage<KeyType, ValueType> implements Storage<KeyType, Value
     private static final Logger log = Logger.getLogger(MemoryStorage.class.getName());
 
     /**
+     * ttlScalar defines the scalar of TTL time period, by default it's in seconds, we only set it to milliseconds
+     * in unit tests
+     */
+    private static long ttlScalar = 1000000000; // 1 second = 1e+9 nanoseconds
+
+    /**
      * Constructor
      */
     public MemoryStorage() {
@@ -64,6 +70,17 @@ public class MemoryStorage<KeyType, ValueType> implements Storage<KeyType, Value
         this.storage = new ConcurrentHashMap<KeyType, ValueType>(this.maxKeySize);
         this.expireAtStorage = new ConcurrentHashMap<KeyType, Long>(this.maxKeySize);
         this.expiringQueue = new ConcurrentLinkedQueue<KeyType>();
+    }
+
+    /**
+     * Constructor
+     *
+     * @param maxKeySize the maximum size of keys MemoryStorage can store
+     * @param ttlScalar is the scalar of ttl
+     */
+    public MemoryStorage(int maxKeySize, long ttlScalar) {
+        this(maxKeySize);
+        this.ttlScalar = ttlScalar;
     }
 
     /**
@@ -96,8 +113,8 @@ public class MemoryStorage<KeyType, ValueType> implements Storage<KeyType, Value
     /**
      * storeKeyAndTTL stores the key with its ttl in expireAtStorage
      */
-    private void storeKeyAndTTL(KeyType key, Long ttlInSec) {
-        Long expiredAt = new Long(Instant.now().getEpochSecond() + ttlInSec.longValue());
+    private void storeKeyAndTTL(KeyType key, Long ttl) {
+        Long expiredAt = new Long(Instant.now().getNano() + ttl.longValue() * ttlScalar);
         expireAtStorage.put(key, expiredAt);
     }
 
@@ -135,7 +152,7 @@ public class MemoryStorage<KeyType, ValueType> implements Storage<KeyType, Value
             }
             updateKeyRecentUsage(key); // update key in queue as it just get fetched
             return value;
-        } catch (Exception e) {
+        } catch (NullPointerException e) {
             log.log(Level.WARNING, "Exception encountered in Get", e);
         }
         return null;
@@ -169,11 +186,11 @@ public class MemoryStorage<KeyType, ValueType> implements Storage<KeyType, Value
      *
      * @param key the key to be set in storage
      * @param value the value to be set with key in storage
-     * @param ttlInSec time-to-live config of the key
+     * @param ttl time-to-live config of the key
      * @return if Set operation succeed or not
      */
-    public Boolean SetEx(KeyType key, ValueType value, Long ttlInSec) {
-        storeKeyAndTTL(key, ttlInSec);
+    public Boolean SetEx(KeyType key, ValueType value, Long ttl) {
+        storeKeyAndTTL(key, ttl);
         return Set(key, value);
     }
 
@@ -191,7 +208,7 @@ public class MemoryStorage<KeyType, ValueType> implements Storage<KeyType, Value
                 throw new KVKeyDoesNotExistsException("Key " + key + " not exists");
             }
             return true;
-        } catch (Exception e) {
+        } catch (NullPointerException e) {
             log.log(Level.WARNING, "Exception encountered in Del", e);
         }
         return false;
