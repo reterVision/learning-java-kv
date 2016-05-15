@@ -78,7 +78,7 @@ public class MemoryStorage<KeyType, ValueType> implements Storage<KeyType, Value
      * @param maxKeySize the maximum size of keys MemoryStorage can store
      * @param ttlScalar is the scalar of ttl
      */
-    public MemoryStorage(int maxKeySize, long ttlScalar) {
+    protected MemoryStorage(int maxKeySize, long ttlScalar) {
         this(maxKeySize);
         this.ttlScalar = ttlScalar;
     }
